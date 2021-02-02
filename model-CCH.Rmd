@@ -1,0 +1,420 @@
+---
+title: "Model Specification"
+author: "Carlos Calvo-Hernandez"
+date: "5/7/2020"
+output: 
+  pdf_document:
+    toc: TRUE
+    number_sections: TRUE
+    fig_width: 5.5
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(deSolve)
+source("data_input.R")
+```
+
+# Basic R Model of the U.S. Budget
+
+## Basic Model of Economic Growth
+
+$$
+\text{GDP}(t) = \text{GDP}(t-1)*\partial \text{GDP}(t-1)
+$$
+where,
+
+$$
+ \partial \text{GDP}(t-1) = (\partial \text{ MFP} + \partial L * \text{ GDP}_{shareL} + \partial K * \text{ GDP}_{shareK}) + \partial \text{ GDP}(\text{debt}) + \sum_i \partial \text{ GDP}(\text{shock}_i, t)
+$$
+
+
+
+multifactor productivity
+$$
+\partial \text{ MFP} = \partial \text{ MFP}(trend)*\partial \text{ MFP}(K) + \partial \text{ MFP}(\text{PublicInvestment})
+$$
+
+
+Labor
+$$
+\partial L = L(\text{trend}) * [1+\partial L(Tax)+\partial L(Infrastructure)]
+$$
+
+Capital
+$$
+\partial K = K(\text{trend})*[1 +\partial K(Tax)+\partial K(Infrastructure)]
+$$
+
+with, $\text{ GDP}_{shareL} +  \text{ GDP}_{shareK} =1$
+
+
+
+
+### Basic model for GDP Growth
+
+For 
+
+$$
+Y_t = Y_{t-1}* (1+y_{t-1})
+$$
+where
+$$
+y_t = [\alpha_t + l_t * (Y_L/Y) + k_t * (Y_K/Y)] + \nu_{debt(t)} + \nu_{shock(t)}
+$$
+
+## Growth Model
+
+### Labor parameters
+
+```{r}
+pop0 <- 140L
+dl <- rep(NA, 76)
+dl[1] <- 0.084
+for (t in 2:76) {
+  if (t != 2) {
+    dl[t] <- (population[t - 1] / population[t - 2]) - 1
+  } else {
+    dl[t] <- (population[t] / pop0) - 1
+  }
+}
+```
+
+### Capital parameters
+
+```{r}
+dk <- rep(NA, 76)
+dk[1] <- 0.0181
+for (t in 2:76){
+  dk[t] <- dk[1]*(1 + kTax[t] + kInf[t])
+}
+```
+
+### Parameter Initialization and Initial Conditions
+
+```{r}
+
+k <- rep(NA, 76)
+y <- rep(NA, 76)
+g <- rep(NA, 76)
+a <- rep(NA, 76)
+lPol <- rep(NA, 76)
+kPol <- rep(NA, 76)
+aPol <- rep(NA, 76)
+
+Ly <- 0.6
+Ky <- 0.4
+a1 <- 0.012
+
+k[1] <- 0.03 
+y[1] <- 15000
+g[1] <- 0.018 #y_t in the model
+a[1] <- 0.0112
+
+li <- 0.2
+ki <- 0.1
+```
+
+### Model Specification
+
+```{r model_growth}
+for (t in 2:76){
+  #aPol[t] <- lPol[t] + kPol[t]
+  a[t] <- a[t-1]*(1+dk[t]) #+ aPol[t-1]
+  g[t] <- a[t] + dl[t]*Ly + dk[t]*Ky 
+  y[t] <- y[t-1]*(1+g[t-1])
+}
+```
+
+
+```{r}
+plot.ts(y)
+```
+
+```{r}
+plot.ts(g)
+```
+
+```{r}
+coeff <- sqrt(sum(y^2))
+df <- tibble(growth = y, mfp = g, time = (1:76))
+ggplot(data = df, aes(x = time))+
+  geom_line(aes(y = growth))+
+  geom_line(aes(y = mfp*coeff)) +
+  scale_y_continuous(name = "GDP",
+                     sec.axis = sec_axis(~./coeff, name =  "MFP"))
+```
+
+```{r}
+plot.ts(a)
+```
+
+
+## Setting up the debt model
+
+### Fiscal Policy Influences on Growth Rate
+
+$$
+\begin{aligned}
+l_{\text{policy}(t)} &= l_{\text{tax personal}(t)} + l_{\text{infrastructure}(t)}\\
+k_{\text{policy}(t)} &= k_{\text{tax coporate}(t)} + k_{\text{infrastructure}(t)}\\
+a_{\text{policy}(t)} = a_{\text{defense}(t)} + a_{\text{education}(t)} &+ a_{\text{health}(t)} + a_{\text{infrastructure}(t)} + a_{\text{research}(t)} + a_{\text{social}(t)}
+\end{aligned}
+$$
+
+$$
+a_{\text{target policy}(t)} = \frac{da}{d\tau_{\text{target policy}(t)}}* (\tau_{\text{target policy}(t)})
+$$
+where $\frac{da}{d\tau_{\text{target policy}(t)}}$ is the elasticity of the rate of growth of multifactor productivity (or of labor or capital as specified) to the expenditure for the target policy, and $\tau_{\text{target policy}(t)}$ is the expenditure for the target policy
+
+$$
+\nu_{\text{debt}(t)} = \left[ \frac{d\nu}{d (\text{Debt})/Y}  \right]*\left(\frac{\text{Debt}_t}{Y_t}\right)
+$$
+
+
+where $\frac{d\nu}{d (\text{Debt})/Y}$ is the elasticity of the economic growth rate to the debt-to-GDP ratio, and $\frac{\text{Debt}_t}{Y_t}$ is the debt-to-GDP ratio in time $t$.
+
+$$
+\text{Debt}_t = \text{Debt}_{t-1} + \text{Balance}_{t-1}
+$$
+
+where
+$$
+\text{Balance}_t = \text{Taxes}_{t} + \text{Expenditures}_{t}
+$$
+and,
+
+$$
+\text{Expenditures}_t = \text{Mandatory}_t + \text{Discretionary}_t + \text{Interest}_t
+$$
+
+where,
+$$
+\text{Mandatory}_t = \text{SocialSecurity}_t + \text{Health}_t + \text{Other}_t
+$$
+
+$$
+\text{Discretionary}_t = \text{Defense}_t + (\text{Education}_t + \text{Infrastructure}_t + \text{Research\&Development}_t)
+$$
+
+
+
+### Debt Model Specification
+
+#### Interest Rate Parameters
+
+```{r interest_det}
+# Interest Rate set up
+intRate <- rep(NA, 76)
+intRateSet <- values$Experimental[28] #"FIAT" or "MARKET"
+intRate[1] <- 0.027 # B166
+intRateTrend <- 0.058 # B167
+intThreshold <- 1.5 # B168
+dIntdy <- as.numeric(values$Experimental[30])/100 # dInterest/dGDP  B169
+dIntdDebtY <- as.numeric(values$Experimental[31])/100 # dInterest/d(Debt/GDP) B170
+intConstant <- values$Experimental[32]/100 # B171
+
+```
+
+#### Parameter Initialization
+
+```{r series_bud}
+debt <- rep(NA, 76)
+bal <- rep(NA, 76)
+tax <- rep(NA, 76)
+exp <- rep(NA, 76)
+interest <- rep(NA, 76)
+discrete <- rep(NA, 76)
+mand <- rep(NA, 76)
+personal <- rep(NA, 76)
+corp <- rep(NA, 76)
+otherTax <- rep(NA, 76)
+otherExp <- rep(NA, 76)
+income <- rep(NA, 76)
+fica <- rep(NA, 76)
+defense <- rep(NA, 76)
+RD <- rep(NA, 76)
+educ <- rep(NA, 76)
+infr <- rep(NA, 76)
+health <- rep(NA, 76)
+social <- rep(NA, 76)
+```
+
+
+#### Tax Specification
+
+##### Baseline data
+
+```{r echo = FALSE}
+knitr::kable(budgetLines)
+```
+##### Tax Revenue
+
+```{r}
+# Tax Revenue
+taxes <- function(type, k) { # personal, corporate and Other taxes
+  for (t in 1:76) {
+    type[t] <- y[t] * (budgetLines$trend[k] * (1 + budgetLines$pol[k])) + (1 + budgetLines$adap[k])
+  }
+  return(type)
+}
+
+income <- taxes(income, 1)
+fica <- taxes(fica, 2)
+corp <- taxes(corp, 3)
+otherTax <- taxes(otherTax, 4)
+otherExp <- taxes(otherExp, 7)
+defense <- taxes(defense, 8)
+RD <- taxes(RD, 9)
+educ <- taxes(educ, 10)
+infr <- taxes(infr, 11)
+# Health and social expenditures as %GDP (need to change as cost of beneficiaries)
+health <- taxes(health, 6)
+social <- taxes(social, 5)
+```
+
+
+
+```{r }
+ #Health and social protection policies
+ #health[t] <- (healthTrend*(1 + healthPol)*beneficiary)*(1 + healthAdap[t])
+ #social[t] <- (socialTrend *(1 + socialPol)*beneficiary)*(1 + socialAdap[t])
+```
+
+
+#### Endogenous Interest
+
+```{r}
+# Endogenous interest
+if (intRateSet == 1) { # 1 = FIAT and 0 = MARKET
+  for (i in 1:length(intRate)) {
+    intRate[i] <- intRateTrend
+  }
+} else {
+  for (j in 1:length(intRate)) {
+    intRate[j] <- 0.015 + 0.45 * g[j - 1] * (0.02(debt[j - 1] / y[j - 1]))
+  }
+}
+  
+```
+
+#### Initial Conditions for Revenues and Expenditures
+
+```{r}
+# Initial conditions
+
+debt[1] <- 10350
+interest[1] <- debt[1]*intRate[1]
+discrete[1] <- defense[1] + (educ[1] + infr[1] + RD[1]) #discretionary expenditure
+mand[1] <- social[1] + health[1] + otherExp[1] # Mandatory Expenditures
+exp[1] <- mand[1] + discrete[1] + interest[1] # Total Expenditures
+
+personal[1] <- income[1] + fica[1]
+tax[1] <- personal[1] + corp[1] + otherTax[1] # Taxes
+
+bal[1] <- tax[1] - exp[1] # GDP Balance
+```
+
+
+#### Model Specification
+
+```{r rev-tax-model}
+
+for (t in 2:76){
+interest[t] <- debt[t-1]*intRate[t] # Interest Expenditures
+
+discrete[t] <- defense[t] + (educ[t] + infr[t] + RD[t]) # Discretionary Expenditure
+mand[t] <- social[t] + health[t] + otherExp[t] # Mandatory Expenditures
+exp[t] <- mand[t] + discrete[t] + interest[t] # Total Expenditures
+
+personal[t] <- income[t] + fica[t] # Personal taxes
+tax[t] <- personal[t] + corp[t] + otherTax[t] # Taxes
+
+bal[t] <- tax[t] - exp[t] # GDP Balance
+debt[t] <- debt[t-1] + bal[t-1]
+}
+```
+
+#### Expenditure Plot
+
+```{r fig.align='center'}
+plot.ts(exp)
+```
+
+
+```{r}
+debtGDPratio <- debt/y
+```
+
+
+#### Debt to GDP Ratio Plot
+
+```{r fig.align='center'}
+plot.ts(debtGDPratio)
+```
+```{r}
+plot.ts(debt)
+```
+
+
+### Debt Ratio and Adaptive Policies Specification
+```{r}
+dGDPdebt <- rep(NA, 76)
+```
+
+
+
+```{r}
+# Changes in Labor and Capiital across the budget
+## include dGDP(debt) into dGDP (g[t]) calculation
+
+dGDPdebt[1] <- min(0, -({debtGDPratio[1] - economyDashboard$Value[4]}*economyDashboard$Value[3]))
+
+```
+
+```{r}
+for (t in 2:76) {
+  dGDPdebt[t] <- min(0, -({debtGDPratio[t - 1] - economyDashboard$Value[4]}*economyDashboard$Value[3]))
+}
+```
+
+```{r}
+plot.ts(dGDPdebt)
+```
+
+```{r}
+aDebt <- a
+gDebt <- g
+yDebt <- y
+```
+
+
+```{r gdp-debt}
+### GDP with debt
+for (t in 2:76){
+  #aPol[t] <- lPol[t] + kPol[t]
+  aDebt[t] <- a1*dk[t] #+ aPol[t-1]
+  gDebt[t] <- {a[t] + dl[t]*Ly + dk[t]*Ky} + dGDPdebt[t]
+  yDebt[t] <- y[t-1]*(1+g[t-1])
+}
+
+```
+
+
+```{r}
+plot.ts(yDebt)
+```
+
+```{r}
+debtGDPratio2 <- debt/yDebt
+plot.ts(debtGDPratio2)
+```
+
+
+
+
+
+
+
+
