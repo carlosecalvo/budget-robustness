@@ -39,38 +39,79 @@ budgetLines$pol <- policies$Baseline
 
 ```
 
-Independent Growth Model and Debt Model
+Sidebar {.sidebar}
 =======================================================================
 
-Column {.sidebar data-width=300}
------------------------------------------------------------------------
-
-### Budget Growth Parameters
+### Growth Model Parameters
 
 ```{r growth-only}
-numericInput("dlTrendG", "POPULATION Growth Rate, trend = 0.008370. Range (0.007, 0.01)", value = 0.008370, min = -1, max = 1, step = 0.0005)
+numericInput("dlTrend", "POPULATION Growth Rate, trend = 0.008370. Range (0.007, 0.01)", value = 0.008370, min = -1, max = 1, step = 0.0005)
 
-numericInput("dkTrendG", "CAPITAL Stock Growth Rate, trend = 0.0181. Range (0.01, 0.05)", value = 0.018100, min = -1, max = 1, step = 0.001)
+numericInput("dkTrend", "CAPITAL Stock Growth Rate, trend = 0.0181. Range (0.01, 0.05)", value = 0.018100, min = -1, max = 1, step = 0.001)
 
 numericInput("dMFP", "PRODUCTIVITY Growth Rate, trend = 0.0112. Range (0.01, 0.02)",  value = 0.011200, min = -1, max = 1, step = 0.001)
 ```
 
 ---
-### Debt Growth Parameters
+### Budget Model Parameters
 
 ```{r debt-only}
 
 numericInput("GDPSet", "Initial Value of GDP", value = 15000, min = 13500, max = 25000, step = 50)
 
-numericInput("GDPGrowth", "GDP Rate of Growth", value = 0.069, min = 0.01, max = 0.08, step = 0.001)
+numericInput("GDPGrowth", "GDP Rate of Growth", value = 0.069, min = -1, max = 1, step = 0.001)
 # Parameters: intRate, intRateTrend, intRateSet 
-numericInput("intRateSetD", "Interest Rate set by FIAT (1) or MARKET (0)", value = 1, min = 0, max = 1, step = 1)
+numericInput("intRateSet", "Interest Rate set by FIAT (1) or MARKET (0)", value = 1, min = 0, max = 1, step = 1)
 
-numericInput("intRateTrendD", "INTEREST RATE on Government Debt, trend", value = 0.057630, min = 0.0250, max = 0.06, step = 0.005)
+numericInput("intRateTrend", "INTEREST RATE on Government Debt, trend = 0.05783. Range (0.025, 0.06)", value = 0.057630, min = -1, max = 1, step = 0.005)
 
-numericInput("intRateIniD", "INTEREST RATE, initial (Default 2.7%)", value = 0.027, min = 0.02, max = 0.05, step = 0.001)
+numericInput("intRateIni", "INTEREST RATE, initial (Default 2.7%)", value = 0.027, min = -1, max = 1, step = 0.001)
 
 ```
+
+```{r}
+selectInput("policy", "Budget Policy", names(policies)[2:7])
+reactive({
+  print(input$policy)
+  print(which(names(policies) == input$policy))
+  print(budgetChange()[,1:2])
+  #print(class(budgetChange()))
+  #kableExtra::kbl(budgetChange()$pol)
+  })
+```
+
+Independent Growth Model and Debt Model
+=======================================================================
+
+<!-- Column {.sidebar data-width=300} -->
+<!-- ----------------------------------------------------------------------- -->
+
+<!-- ### Growth Model Parameters -->
+
+<!-- ```{r growth-only} -->
+<!-- numericInput("dlTrendG", "POPULATION Growth Rate, trend = 0.008370. Range (0.007, 0.01)", value = 0.008370, min = -1, max = 1, step = 0.0005) -->
+
+<!-- numericInput("dkTrendG", "CAPITAL Stock Growth Rate, trend = 0.0181. Range (0.01, 0.05)", value = 0.018100, min = -1, max = 1, step = 0.001) -->
+
+<!-- numericInput("dMFP", "PRODUCTIVITY Growth Rate, trend = 0.0112. Range (0.01, 0.02)",  value = 0.011200, min = -1, max = 1, step = 0.001) -->
+<!-- ``` -->
+
+<!-- --- -->
+<!-- ### Budget Model Parameters -->
+
+<!-- ```{r debt-only} -->
+
+<!-- numericInput("GDPSet", "Initial Value of GDP", value = 15000, min = 13500, max = 25000, step = 50) -->
+
+<!-- numericInput("GDPGrowth", "GDP Rate of Growth", value = 0.069, min = 0.01, max = 0.08, step = 0.001) -->
+<!-- # Parameters: intRate, intRateTrend, intRateSet  -->
+<!-- numericInput("intRateSetD", "Interest Rate set by FIAT (1) or MARKET (0)", value = 1, min = 0, max = 1, step = 1) -->
+
+<!-- numericInput("intRateTrendD", "INTEREST RATE on Government Debt, trend", value = 0.057630, min = 0.0250, max = 0.06, step = 0.005) -->
+
+<!-- numericInput("intRateIniD", "INTEREST RATE, initial (Default 2.7%)", value = 0.027, min = 0.02, max = 0.05, step = 0.001) -->
+
+<!-- ``` -->
 
 
 Column {data-width=700}
@@ -79,12 +120,12 @@ Column {data-width=700}
 ### Growth Model Results
 
 ```{r}
-growthResG <- reactive({ as_tibble(growthModel(dlTrend = input$dlTrendG, dkTrend = input$dkTrendG))  
+growthResG <- reactive({ as_tibble(growthModel(dlTrend = input$dlTrend, dkTrend = input$dkTrend, dMFP = input$dMFP))  
 })
 #coeff <- sqrt(sum(growthRes$GDP^2))
 
 renderPlot({ 
-  gdp_pg <- ggplot(data = growthResG(), aes(x = 1:76))+
+  gdp_pg <- ggplot(data = growthRes(), aes(x = 1:76))+
   geom_line(aes(y = GDP), size = 1.1)+
   geom_line(data = baseGrowth, aes(y = GDP), color = "red", alpha = 0.5)+
   # geom_line(aes(y = MFP*coeff)) +
@@ -107,7 +148,7 @@ renderPlot({
 })
 ```
 
-### Debt Model Results
+### Budget Model Results
 
 ```{r}
 GDPInput <- reactive({
@@ -122,11 +163,11 @@ GDPInput <- reactive({
 debtResultG <- reactive({ 
   intRate <- rep(NA, 76)
   intRate[1] <- input$intRateIni
-  as_tibble(debtModel(intRate = intRate, intRateTrend = input$intRateTrendD, intRateSet = input$intRateSetD, GDP = GDPInput()))
+  as_tibble(debtModel(intRate = intRate, intRateTrend = input$intRateTrend, intRateSet = input$intRateSet, GDP = GDPInput()))
   })
 
 renderPlot({
-  debt_p <- ggplot(data = debtResultG(), aes(x = 1:76))+
+  debt_p <- ggplot(data = debtResult(), aes(x = 1:76))+
   geom_line(aes(y = Debt), size = 1.1)+
   geom_line(data = baseDebt, aes(y = Debt), color = "red", alpha = 0.5)+
   # geom_line(aes(y = MFP*coeff)) +
@@ -149,41 +190,41 @@ renderPlot({
 Integrated Growth and Debt Models
 =======================================================================
 
-Column {.sidebar data-width=300}
------------------------------------------------------------------------
+<!-- Column {.sidebar data-width=300} -->
+<!-- ----------------------------------------------------------------------- -->
 
-### Budget Growth Parameters
+<!-- ### Budget Growth Parameters -->
 
-```{r growth}
-numericInput("dlTrend", "POPULATION Growth Rate, Trend = 0.00837. Range (0.007, 0.01)", value = 0.008370, min = -1, max = 1, step = 0.0005)
+<!-- ```{r growth} -->
+<!-- numericInput("dlTrend", "POPULATION Growth Rate, Trend = 0.00837. Range (0.007, 0.01)", value = 0.008370, min = -1, max = 1, step = 0.0005) -->
 
-numericInput("dkTrend", "CAPITAL Stock Growth Rate, Trend = 0.018100. Range (0.01, 0.05)", value = 0.018100, min = -1, max = 1, step = 0.001)
+<!-- numericInput("dkTrend", "CAPITAL Stock Growth Rate, Trend = 0.018100. Range (0.01, 0.05)", value = 0.018100, min = -1, max = 1, step = 0.001) -->
 
-numericInput("dMFP", "PRODUCTIVITY Growth Rate, Trend = 0.011200. Range (0.01, 0.02)", value = 0.011200, min = -1, max = 1, step = 0.001)
-```
----
-### Debt Growth Parameters
+<!-- numericInput("dMFP", "PRODUCTIVITY Growth Rate, Trend = 0.011200. Range (0.01, 0.02)", value = 0.011200, min = -1, max = 1, step = 0.001) -->
+<!-- ``` -->
+<!-- --- -->
+<!-- ### Debt Growth Parameters -->
 
-```{r debt}
-# Parameters: intRate, intRateTrend, intRateSet 
-numericInput("intRateSet", "Interest Rate set by FIAT (1) or MARKET (0)", value = 1, min = 0, max = 1, step = 1)
+<!-- ```{r debt} -->
+<!-- # Parameters: intRate, intRateTrend, intRateSet  -->
+<!-- numericInput("intRateSet", "Interest Rate set by FIAT (1) or MARKET (0)", value = 1, min = 0, max = 1, step = 1) -->
 
-numericInput("intRateTrend", "INTEREST RATE on Government Debt, trend = 0.05783. Range (0.025, 0.06)", value = 0.057630, min = -1, max = 1, step = 0.005)
+<!-- numericInput("intRateTrend", "INTEREST RATE on Government Debt, trend = 0.05783. Range (0.025, 0.06)", value = 0.057630, min = -1, max = 1, step = 0.005) -->
 
-numericInput("intRateIni", "INTEREST RATE, initial (Default 2.7%)", value = 0.027, min = -1, max = 1, step = 0.001)
+<!-- numericInput("intRateIni", "INTEREST RATE, initial (Default 2.7%)", value = 0.027, min = -1, max = 1, step = 0.001) -->
 
-```
+<!-- ``` -->
 
-```{r}
-selectInput("policy", "Budget Policy", names(policies)[2:7])
-reactive({
-  print(input$policy)
-  print(which(names(policies) == input$policy))
-  print(budgetChange()[,1:2])
-  #print(class(budgetChange()))
-  #kableExtra::kbl(budgetChange()$pol)
-  })
-```
+<!-- ```{r} -->
+<!-- selectInput("policy", "Budget Policy", names(policies)[2:7]) -->
+<!-- reactive({ -->
+<!--   print(input$policy) -->
+<!--   print(which(names(policies) == input$policy)) -->
+<!--   print(budgetChange()[,1:2]) -->
+<!--   #print(class(budgetChange())) -->
+<!--   #kableExtra::kbl(budgetChange()$pol) -->
+<!--   }) -->
+<!-- ``` -->
 
 
 Column {data-width=700}
@@ -195,7 +236,7 @@ Column {data-width=700}
 growthRes <- reactive({ 
   withProgress(message = "Calculating GDP", value = 0, {
     incProgress()
-    as_tibble(growthModel(dlTrend = input$dlTrend, dkTrend = input$dkTrend))  
+    as_tibble(growthModel(dlTrend = input$dlTrend, dkTrend = input$dkTrend, dMFP = input$dMFP))  
   })
 })
 #coeff <- sqrt(sum(growthRes$GDP^2))
@@ -218,11 +259,12 @@ renderPlot({
     ggtitle("MFP over time")
   
   cowplot::plot_grid(gdp_p, mfp_p, labels = "AUTO")
+
   
 })
 ```
 
-### Debt Model Results
+### Budget Model Results
 
 ```{r}
 #browser()

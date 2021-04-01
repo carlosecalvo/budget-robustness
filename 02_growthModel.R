@@ -3,6 +3,17 @@
 #### Author: Carlos Calvo-Hernandez
 #### 2020-10-01
 
+#' Growth Model Evaluation function
+#' 
+#' @param dMFP a 76-length empty series with an initial value on entry 1
+#' @param dGDP a 76-length empty series with an initial value on entry 1
+#' @param GDP a 76-length empty series with an initial value on entry 1
+#' @param dlTrend a number
+#' @param dkTrend a number
+#' @return a list of \code{GDP}, \code{dGDP}, \code{MFP}, \code{dlTrend}, and
+#' \code{dkTrend}
+
+
 growthModel <- function(dMFP = a, dGDP = g, GDP = y, dlTrend, dkTrend){
   
   ######## Labor parameters #########
