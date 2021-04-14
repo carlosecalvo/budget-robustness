@@ -120,24 +120,28 @@ Column {data-width=700}
 ### Growth Model Results
 
 ```{r}
-growthResG <- reactive({ as_tibble(growthModel(dlTrend = input$dlTrend, dkTrend = input$dkTrend, dMFP = input$dMFP))  
+growthResG <- reactive({ 
+  dMFPparm <- rep(NA, 76)
+  dMFPparm[1] <- input$dMFP
+  modelRes <- as_tibble(growthModel(dlTrend = input$dlTrend, dkTrend = input$dkTrend, dMFP = dMFPparm))
+  return(modelRes)
 })
 #coeff <- sqrt(sum(growthRes$GDP^2))
 
 renderPlot({ 
   gdp_pg <- ggplot(data = growthRes(), aes(x = 1:76))+
-  geom_line(aes(y = GDP), size = 1.1)+
-  geom_line(data = baseGrowth, aes(y = GDP), color = "red", alpha = 0.5)+
+  geom_line(aes(y = GDP), size = 1.1, color = "purple")+
+  geom_line(data = baseGrowth, aes(y = GDP), color = "black", alpha = 0.5)+
   # geom_line(aes(y = MFP*coeff)) +
    scale_y_continuous(name = "GDP", labels = scales::label_dollar(), breaks = scales::breaks_extended(n=4))+
     xlab("Time")+
-    ggtitle("GDP over time", subtitle = "Red line = Baseline")
+    ggtitle("GDP over time", subtitle = "Black line = Baseline")
   #                    sec.axis = sec_axis(~./coeff, name =  "MFP"))
   #plotly::ggplotly(p, tooltip = c('y', 'x'))
   
   mfp_pg <- ggplot(data = growthRes(), aes(x = 1:76))+
-  geom_line(aes(y = MFP), size = 1.1)+
-  geom_line(data = baseGrowth, aes(y = MFP), color = "red", alpha = 0.5)+
+  geom_line(aes(y = MFP), size = 1.1, color = "purple")+
+  geom_line(data = baseGrowth, aes(y = MFP), color = "black", alpha = 0.5)+
   # geom_line(aes(y = MFP*coeff)) +
    scale_y_continuous(name = "MFP")+
     xlab("Time")+
@@ -168,8 +172,8 @@ debtResultG <- reactive({
 
 renderPlot({
   debt_p <- ggplot(data = debtResult(), aes(x = 1:76))+
-  geom_line(aes(y = Debt), size = 1.1)+
-  geom_line(data = baseDebt, aes(y = Debt), color = "red", alpha = 0.5)+
+  geom_line(aes(y = Debt), size = 1.1, color = "purple")+
+  geom_line(data = baseDebt, aes(y = Debt), color = "black", alpha = 0.5)+
   # geom_line(aes(y = MFP*coeff)) +
    scale_y_continuous(name = "Debt", labels = scales::label_dollar())+
     xlab("Time")+
@@ -177,7 +181,7 @@ renderPlot({
   
   df <- tibble(growth = GDPInput(), time = (1:76))
   gdp <- ggplot(data = df, aes(x = (1:76), y = growth))+
-    geom_line()+
+    geom_line(color = "purple")+
     scale_y_continuous(name = "GDP", labels = scales::label_dollar())+
     xlab("Time")+
     ggtitle("GDP over time")
@@ -236,14 +240,17 @@ Column {data-width=700}
 growthRes <- reactive({ 
   withProgress(message = "Calculating GDP", value = 0, {
     incProgress()
-    as_tibble(growthModel(dlTrend = input$dlTrend, dkTrend = input$dkTrend, dMFP = input$dMFP))  
+    dMFPparm <- rep(NA, 76)
+  dMFPparm[1] <- input$dMFP
+  modelRes <- as_tibble(growthModel(dlTrend = input$dlTrend, dkTrend = input$dkTrend, dMFP = dMFPparm))
+  return(modelRes)  
   })
 })
 #coeff <- sqrt(sum(growthRes$GDP^2))
 
 renderPlot({ 
   gdp_p <- ggplot(data = growthRes(), aes(x = 1:76))+
-  geom_line(aes(y = GDP), size = 1.1)+
+  geom_line(aes(y = GDP), size = 1.1, color = "purple")+
   # geom_line(aes(y = MFP*coeff)) +
    scale_y_continuous(name = "GDP", labels = scales::label_dollar(), breaks = scales::breaks_extended(n=4))+
     xlab("Time")+
@@ -252,7 +259,7 @@ renderPlot({
   #plotly::ggplotly(p, tooltip = c('y', 'x'))
   
   mfp_p <- ggplot(data = growthRes(), aes(x = 1:76))+
-  geom_line(aes(y = MFP), size = 1.1)+
+  geom_line(aes(y = MFP), size = 1.1, color = "purple")+
   # geom_line(aes(y = MFP*coeff)) +
    scale_y_continuous(name = "MFP")+
     xlab("Time")+
@@ -289,7 +296,7 @@ debtResult <- reactive({
 
 renderPlot({
   debt_p <- ggplot(data = debtResult(), aes(x = 1:76))+
-  geom_line(aes(y = Debt), size = 1.1)+
+  geom_line(aes(y = Debt), size = 1.1, color = "purple")+
   # geom_line(aes(y = MFP*coeff)) +
    scale_y_continuous(name = "Debt", labels = scales::label_dollar())+
     xlab("Time")+
@@ -309,4 +316,18 @@ renderPlot({
   cowplot::plot_grid(debt_p, budget_p, labels = "AUTO")
 })
 ```
+
+
+Lock-step Growth and Debt Models
+=======================================================================
+
+Column {data-width=700}
+-----------------------------------------------------------------------
+
+### Growth Model Results
+
+
+
+
+### Budget Model Resultss
 

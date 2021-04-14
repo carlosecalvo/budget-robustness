@@ -412,6 +412,81 @@ plot.ts(debtGDPratio2)
 ```
 
 
+## Changing Population module
+
+```{r}
+# Parameter initialization
+GDP <- y
+dPopdGDP <- rep(NA, 76)
+dPop <- rep(NA, 76)
+
+dGDP <- rep(NA, 76)
+dGDP[1] <- 0
+
+# GDP <- seq(from = 15000, to = 9500, length.out = 76) ## to check for negative dGDP behavior
+
+
+# Functions
+
+#dl[t] <- dPop[t] #dl as in the GDP calculation or input for the model?
+
+dPop <- dl
+
+PopGDPRatio <- 0.5
+
+#population[t] <- population[t - 1]*(1 + dPop[t])
+
+#dPop[t] <- dPop[t - 1] + dPopdGDP[t]
+
+for (t in 2:76)  {
+  
+  dGDP[t] <- GDP[t]/GDP[t - 1] - 1
+  
+    if (dGDP[t - 1] >= 0) {
+    dPopdGDP[t] <- 0
+  } else {
+    dPopdGDP[t] <- (PopGDPRatio)*dGDP[t - 1] # this is a circular equation, need to figure out if dPop and dGDP are on timestep t or t-1
+  }
+  
+  dPop[t] <- dPop[t - 1] + dPopdGDP[t]
+  
+  population[t] <- population[t - 1]*(1 + dPop[t])
+  
+    }
+
+
+```
+
+
+```{r}
+plot.ts(population)
+```
+
+
+```{r}
+plot.ts(dPop)
+```
+```{r}
+plot.ts(dPopdGDP)
+```
+
+
+```{r}
+plot.ts(dGDP)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
