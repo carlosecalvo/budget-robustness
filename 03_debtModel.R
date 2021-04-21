@@ -11,9 +11,9 @@
 
 taxes <- function(type, k, GDP, budgetPol) { # personal, corporate and Other taxes
   y  <- as.double(GDP)
-  budgetLines <- budgetPol
+  budgetLine <- budgetPol
   for (t in 1:76) {
-    type[t] <- y[t] * (budgetLines$trend[k] * (1 + budgetLines$pol[k])) + (1 + budgetLines$adap[k])
+    type[t] <- y[t] * (budgetLine$trend[k]) #* (1 + budgetLines$pol[k])) + (1 + budgetLines$adap[k])
   }
   return(type)
 }
@@ -32,22 +32,22 @@ debtModel <- function(intRate, intRateTrend, intRateSet = 1, GDP, budgetData = b
   personal <- rep(NA, 76)
   
   y <- as.double(GDP)
-  budgetPol <- budgetData
+  budget <- budgetData
   
-  income <- taxes(income, 1, y, budgetPol)
-  fica <- taxes(fica, 2, y, budgetPol)
-  corp <- taxes(corp, 3, y, budgetPol)
-  otherTax <- taxes(otherTax, 4, y, budgetPol)
-  otherExp <- taxes(otherExp, 7, y, budgetPol)
-  defense <- taxes(defense, 8, y, budgetPol)
-  RD <- taxes(RD, 9, y, budgetPol)
-  educ <- taxes(educ, 10, y, budgetPol)
-  infr <- taxes(infr, 11, y, budgetPol)
+  income <- taxes(income, 1, y, budgetPol = budget)
+  fica <- taxes(fica, 2, y, budgetPol = budget)
+  corp <- taxes(corp, 3, y, budgetPol = budget)
+  otherTax <- taxes(otherTax, 4, y, budgetPol = budget)
+  otherExp <- taxes(otherExp, 7, y, budgetPol = budget)
+  defense <- taxes(defense, 8, y, budgetPol = budget)
+  RD <- taxes(RD, 9, y, budgetPol = budget)
+  educ <- taxes(educ, 10, y, budgetPol = budget)
+  infr <- taxes(infr, 11, y, budgetPol = budget)
   
   
   # Health and social expenditures as %GDP (need to change as cost of beneficiaries)
-  health <- taxes(health, 6, y, budgetPol)
-  social <- taxes(social, 5, y, budgetPol)
+  health <- taxes(health, 6, y, budgetPol = budget)
+  social <- taxes(social, 5, y, budgetPol = budget)
   
   # Endogenous interest
   if (intRateSet == 1) { # 1 = FIAT and 0 = MARKET
@@ -65,7 +65,7 @@ debtModel <- function(intRate, intRateTrend, intRateSet = 1, GDP, budgetData = b
   
   
   debt[1] <- 10350
-  interest[1] <- debt[1]*intRate[1]
+  interest[1] <- debt[1]*(1 + intRate[1])
   discrete[1] <- defense[1] + (educ[1] + infr[1] + RD[1]) #discretionary expenditure
   mand[1] <- social[1] + health[1] + otherExp[1] # Mandatory Expenditures
   exp[1] <- mand[1] + discrete[1] + interest[1] # Total Expenditures
@@ -79,7 +79,7 @@ debtModel <- function(intRate, intRateTrend, intRateSet = 1, GDP, budgetData = b
   #browser()
   
   for (t in 2:76){
-    interest[t] <- debt[t-1]*intRate[t] # Interest Expenditures
+    interest[t] <- debt[t-1]*(1 + intRate[t]) # Interest Expenditures
     
     discrete[t] <- defense[t] + (educ[t] + infr[t] + RD[t]) # Discretionary Expenditure
     mand[t] <- social[t] + health[t] + otherExp[t] # Mandatory Expenditures
@@ -92,7 +92,9 @@ debtModel <- function(intRate, intRateTrend, intRateSet = 1, GDP, budgetData = b
     debt[t] <- debt[t-1] + bal[t-1]
   }
   
-  results <- list(Debt = debt, Balance =  bal, TaxAgg = tax, PersonalTax = personal, ExpendituresAgg = exp, Mandatory = mand, DiscreteT = discrete, InterestAgg = interest)
+  results <- list(Debt = debt, Balance =  bal, TaxAgg = tax, PersonalTax = personal, ExpendituresAgg = exp, 
+                  Mandatory = mand, DiscreteT = discrete, InterestAgg = interest)
+  
   return(results)
 }
 

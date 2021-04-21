@@ -21,18 +21,20 @@ library(shiny)
 files <- list.files(pattern = "^[0-3]{2}(.*).R$")
 purrr::map(files, source)
 
-testMFP <- rep(NA, 76)
-testMFP[1] <- 0.0112
-baseGrowth <- growthModel(dMFP = testMFP, dlTrend = 0.00837, dkTrend = 0.0181) %>% 
-  as_tibble()
-
 baseGDP <- rep(NA, 76)
 baseGDP[1] <- 15000
+
+testMFP <- rep(NA, 76)
+testMFP[1] <- 0.0112
+baseGrowth <- growthModel(iGDP = as.numeric(baseGDP[1]), dMFP = testMFP, dlTrend = 0.00837, dkTrend = 0.0181) %>% 
+  as_tibble()
+
+
   for (i in 2:76) {
     baseGDP[i] <- baseGDP[i-1]*(1 + 0.069)
   }
 
-baseDebt <- debtModel(intRate = intRate, intRateTrend = 0.057630, intRateSet = 1, GDP = baseGDP) %>% 
+baseDebt <- debtModel(intRate = intRate, intRateTrend = 0.057630, intRateSet = 1, GDP = baseGrowth$GDP) %>% 
   as.tibble()
 
 budgetLines$pol <- policies$Baseline
@@ -75,6 +77,7 @@ reactive({
   print(input$policy)
   print(which(names(policies) == input$policy))
   print(budgetChange()[,1:2])
+  print(GDPInput())
   #print(class(budgetChange()))
   #kableExtra::kbl(budgetChange()$pol)
   })
@@ -123,7 +126,7 @@ Column {data-width=700}
 growthResG <- reactive({ 
   dMFPparm <- rep(NA, 76)
   dMFPparm[1] <- input$dMFP
-  modelRes <- as_tibble(growthModel(dlTrend = input$dlTrend, dkTrend = input$dkTrend, dMFP = dMFPparm))
+  modelRes <- as_tibble(growthModel(iGDP = input$GDPSet, dlTrend = input$dlTrend, dkTrend = input$dkTrend, dMFP = dMFPparm))
   return(modelRes)
 })
 #coeff <- sqrt(sum(growthRes$GDP^2))
@@ -173,6 +176,7 @@ debtResultG <- reactive({
 renderPlot({
   debt_p <- ggplot(data = debtResult(), aes(x = 1:76))+
   geom_line(aes(y = Debt), size = 1.1, color = "purple")+
+    geom_point(aes(y = Debt), size = 1.1, color = "black")+
   geom_line(data = baseDebt, aes(y = Debt), color = "black", alpha = 0.5)+
   # geom_line(aes(y = MFP*coeff)) +
    scale_y_continuous(name = "Debt", labels = scales::label_dollar())+
@@ -242,7 +246,7 @@ growthRes <- reactive({
     incProgress()
     dMFPparm <- rep(NA, 76)
   dMFPparm[1] <- input$dMFP
-  modelRes <- as_tibble(growthModel(dlTrend = input$dlTrend, dkTrend = input$dkTrend, dMFP = dMFPparm))
+  modelRes <- as_tibble(growthModel(iGDP = input$GDPSet, dlTrend = input$dlTrend, dkTrend = input$dkTrend, dMFP = dMFPparm))
   return(modelRes)  
   })
 })
@@ -297,6 +301,7 @@ debtResult <- reactive({
 renderPlot({
   debt_p <- ggplot(data = debtResult(), aes(x = 1:76))+
   geom_line(aes(y = Debt), size = 1.1, color = "purple")+
+    geom_point(aes(y = Debt), size = 1.1, color = "black")+
   # geom_line(aes(y = MFP*coeff)) +
    scale_y_continuous(name = "Debt", labels = scales::label_dollar())+
     xlab("Time")+

@@ -14,7 +14,10 @@
 #' \code{dkTrend}
 
 
-growthModel <- function(dMFP = a, dGDP = g, GDP = y, dlTrend, dkTrend){
+growthModel <- function(dMFP = a, dGDP = g, iGDP, dlTrend, dkTrend){
+  
+  GDP <- rep(NA, 76)
+  GDP[1] <- iGDP
   
   ######## Labor parameters #########
   
@@ -24,13 +27,22 @@ growthModel <- function(dMFP = a, dGDP = g, GDP = y, dlTrend, dkTrend){
   dl[1] <- dlTrend # transition later to a dashboard like input (TO DO)
   
   
-  for (t in 2:length(dl)) {
-    if (t != 2) {
-      dl[t] <- (population[t] / population[t - 1]) - 1
-    } else {
-      dl[t] <- (population[t] / pop0) - 1
-    }
-  }
+  # for (t in 2:length(dl)) {
+  #   if (t != 2) {
+  #     dl[t] <- (population[t] / population[t - 1]) - 1
+  #   } else {
+  #     dl[t] <- (population[t] / pop0) - 1
+  #   }
+  # }
+  
+  dPopdGDP <- rep(NA, 76)
+  dPop <- rep(NA, 76)
+  dPop[1] <- dlTrend
+  
+  changeGDP <- rep(NA, 76)
+  changeGDP[1] <- 0
+  
+  PopGDPRatio <- 0.5
   
   ######## Capital parameters #########
   
@@ -47,13 +59,32 @@ growthModel <- function(dMFP = a, dGDP = g, GDP = y, dlTrend, dkTrend){
   ###### Growth Model Specification ######
   
   for (t in 2:76){
+    
+    if (t == 2){
+      changeGDP[t] <- 0.069
+    }else{
+      changeGDP[t] <- (GDP[t - 1]/GDP[t - 2]) - 1
+    }
+    
+    if (changeGDP[t - 1] >= 0) {
+      dPopdGDP[t] <- 0
+    } else {
+      dPopdGDP[t] <- (PopGDPRatio)*changeGDP[t - 1] 
+    }
+    
+    dPop[t] <- dPop[t - 1] * ( 1 + dPopdGDP[t])
+    
+    population[t] <- population[t - 1]*(1 + dPop[t])
+    
+    dl[t] <- dPop[t]
+    
     #aPol[t] <- lPol[t] + kPol[t] # (TO DO) Include adaptive policies
     dMFP[t] <- dMFP[t-1]*(1 + dk[t]) #+ aPol[t-1]
     g[t] <- dMFP[t] + dl[t]*Ly + dk[t]*Ky 
-    y[t] <- y[t-1]*(1+g[t-1])
+    GDP[t] <- GDP[t-1]*(1+g[t-1])
   }
   
-  results <- list(GDP = y, dGDP = g, MFP = dMFP, dl = dlTrend, dk = dkTrend) 
+  results <- list(GDP = GDP, dGDP = g, MFP = dMFP, dl = dlTrend, dk = dkTrend) 
   
   return(results)
   
