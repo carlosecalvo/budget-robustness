@@ -57,7 +57,7 @@ debtModel <- function(intRate, intRateTrend, intRateSet = 1, GDP, budgetData = b
   } else {
     intRate[1] <- intRateTrend
     for (j in 2:length(intRate)) {
-      intRate[j] <- 0.015 + 0.45 * g[j - 1] * (0.02*(debt[j - 1] / y[j - 1]))
+      intRate[j] <- 0.015 + (0.45 * g[j - 1]) * (0.02 * (debt[j - 1] / y[j - 1]))
     }
   }
   

@@ -27,7 +27,7 @@ a1 <- 0.012           # MFP trend
 
 k[1] <- 0.03 
 y[1] <- 15000
-g[1] <- 0.018 #y_t in the model
+g[1] <- 0.018         # y_t in the model
 a[1] <- 0.0112
 
 li <- 0.2

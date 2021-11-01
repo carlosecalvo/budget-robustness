@@ -7,7 +7,7 @@
 #' 
 #' @param dMFP a 76-length empty series with an initial value on entry 1
 #' @param dGDP a 76-length empty series with an initial value on entry 1
-#' @param GDP a 76-length empty series with an initial value on entry 1
+#' @param iGDP a 76-length empty series with an initial value on entry 1
 #' @param dlTrend a number
 #' @param dkTrend a number
 #' @return a list of \code{GDP}, \code{dGDP}, \code{MFP}, \code{dlTrend}, and
@@ -69,19 +69,19 @@ growthModel <- function(dMFP = a, dGDP = g, iGDP, dlTrend, dkTrend){
     if (changeGDP[t - 1] >= 0) {
       dPopdGDP[t] <- 0
     } else {
-      dPopdGDP[t] <- (PopGDPRatio)*changeGDP[t - 1] 
+      dPopdGDP[t] <- (PopGDPRatio) * changeGDP[t - 1] 
     }
     
     dPop[t] <- dPop[t - 1] * ( 1 + dPopdGDP[t])
     
-    population[t] <- population[t - 1]*(1 + dPop[t])
+    population[t] <- population[t - 1] * (1 + dPop[t])
     
     dl[t] <- dPop[t]
     
     #aPol[t] <- lPol[t] + kPol[t] # (TO DO) Include adaptive policies
-    dMFP[t] <- dMFP[t-1]*(1 + dk[t]) #+ aPol[t-1]
-    g[t] <- dMFP[t] + dl[t]*Ly + dk[t]*Ky 
-    GDP[t] <- GDP[t-1]*(1+g[t-1])
+    dMFP[t] <- dMFP[t-1] * (1 + dk[t]) #+ aPol[t-1]
+    g[t] <- dMFP[t] + (dl[t] * Ly) + (dk[t] * Ky) 
+    GDP[t] <- (GDP[t-1]) * (1+g[t-1])
   }
   
   results <- list(GDP = GDP, dGDP = g, MFP = dMFP, dl = dlTrend, dk = dkTrend) 
