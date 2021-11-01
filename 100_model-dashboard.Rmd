@@ -15,9 +15,11 @@ resource_files:
 ---
 
 ```{r global, include=FALSE}
+library(plotly)
 library(tidyverse)
 library(flexdashboard)
 library(shiny)
+
 files <- list.files(pattern = "^[0-3]{2}(.*).R$")
 purrr::map(files, source)
 
@@ -35,7 +37,7 @@ baseGrowth <- growthModel(iGDP = as.numeric(baseGDP[1]), dMFP = testMFP, dlTrend
   }
 
 baseDebt <- debtModel(intRate = intRate, intRateTrend = 0.057630, intRateSet = 1, GDP = baseGrowth$GDP) %>% 
-  as.tibble()
+  as_tibble()
 
 budgetLines$pol <- policies$Baseline
 
@@ -151,6 +153,13 @@ renderPlot({
     xlab("Time")+
     ggtitle("MFP over time")
   
+  #fig1 <- ggplotly(gdp_pg)
+  #fig2 <- ggplotly(mfp_pg)
+  
+  #fig <- plotly::subplot(gdp_pg, mfp_pg)
+  
+  #return(fig)
+  
   cowplot::plot_grid(gdp_pg, mfp_pg, labels = "AUTO")
   
 })
@@ -168,6 +177,12 @@ GDPInput <- reactive({
   return(GDP)
 })
 
+baseDebtInput <- reactive({
+  intRate <- rep(NA, 76)
+  intRate[1] <- input$intRateIni
+  as_tibble(debtModel(intRate = intRate, intRateTrend = 0.057630, intRateSet = 1, GDP = GDPInput()))
+})
+
 debtResultG <- reactive({ 
   intRate <- rep(NA, 76)
   intRate[1] <- input$intRateIni
@@ -175,10 +190,10 @@ debtResultG <- reactive({
   })
 
 renderPlot({
-  debt_p <- ggplot(data = debtResult(), aes(x = 1:76))+
+  debt_p <- ggplot(data = debtResultG(), aes(x = 1:76))+
   geom_line(aes(y = Debt), size = 1.1, color = "purple")+
     geom_point(aes(y = Debt), size = 1.1, color = "black")+
-  geom_line(data = baseDebt, aes(y = Debt), color = "black", alpha = 0.5)+
+  geom_line(data = baseDebtInput(), aes(y = Debt), color = "black", alpha = 0.5)+
   # geom_line(aes(y = MFP*coeff)) +
    scale_y_continuous(name = "Debt", labels = scales::label_dollar())+
     xlab("Time")+
