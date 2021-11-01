@@ -78,6 +78,7 @@ reactive({
   print(which(names(policies) == input$policy))
   print(budgetChange()[,1:2])
   print(GDPInput())
+  print(debtResultG())
   #print(class(budgetChange()))
   #kableExtra::kbl(budgetChange()$pol)
   })

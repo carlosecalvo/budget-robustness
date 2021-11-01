@@ -65,7 +65,7 @@ debtModel <- function(intRate, intRateTrend, intRateSet = 1, GDP, budgetData = b
   
   
   debt[1] <- 10350
-  interest[1] <- debt[1]*(1 + intRate[1])
+  interest[1] <- debt[1]*(intRate[1])
   discrete[1] <- defense[1] + (educ[1] + infr[1] + RD[1]) #discretionary expenditure
   mand[1] <- social[1] + health[1] + otherExp[1] # Mandatory Expenditures
   exp[1] <- mand[1] + discrete[1] + interest[1] # Total Expenditures
@@ -79,7 +79,7 @@ debtModel <- function(intRate, intRateTrend, intRateSet = 1, GDP, budgetData = b
   #browser()
   
   for (t in 2:76){
-    interest[t] <- debt[t-1]*(1 + intRate[t]) # Interest Expenditures
+    interest[t] <- debt[t-1]*(intRate[t]) # Interest Expenditures
     
     discrete[t] <- defense[t] + (educ[t] + infr[t] + RD[t]) # Discretionary Expenditure
     mand[t] <- social[t] + health[t] + otherExp[t] # Mandatory Expenditures
