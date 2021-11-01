@@ -195,7 +195,7 @@ renderPlot({
 ```
 
 
-Integrated Growth and Debt Models
+Growth-dependent Debt Model
 =======================================================================
 
 <!-- Column {.sidebar data-width=300} -->
@@ -323,7 +323,7 @@ renderPlot({
 ```
 
 
-Lock-step Growth and Debt Models
+Integrated Growth and Debt Model
 =======================================================================
 
 Column {data-width=700}
